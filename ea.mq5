@@ -6,6 +6,11 @@
 #include <Trade\Trade.mqh>
 CTrade trade;
 
+//=== Windows API for Keyboard ======================================
+#import "user32.dll"
+   short GetAsyncKeyState(int vKey);
+#import
+
 //=== Inputs ========================================================
 input int    PanelRightX  = 40;
 input int    PanelBottomY = 40;
@@ -14,10 +19,10 @@ input string EntrySound   = "alert.wav";
 input string ExitSound    = "alert2.wav";
 
 //=== ロット初期値 ==================================================
-double DefaultLots1 = 10.0;
-double DefaultLots2 = 8.0;
-double DefaultLots3 = 1.0;
-double DefaultLots4 = 0.5;
+double DefaultLots1 = 4;
+double DefaultLots2 = 2;
+double DefaultLots3 = 0.8;
+double DefaultLots4 = 0.4;
 
 // CLOSE ALL ボタン
 string CloseBtnText   = "CLOSE ALL";
@@ -72,6 +77,16 @@ int LabelColumnWidth = 120;
 double cachedAvgPrice = 0.0;
 bool   avgDirty       = true;
 
+//=== Virtual Key Codes =============================================
+#define VK_CONTROL 0x11
+#define VK_MENU    0x12  // Alt key
+#define VK_1       0x31
+#define VK_2       0x32
+#define VK_3       0x33
+#define VK_4       0x34
+#define VK_C       0x43
+#define VK_X       0x58
+
 //===================================================================
 // Forward Declarations
 void UpdateLayout();
@@ -83,6 +98,7 @@ void CreateEdit(string name,int x,int y,int w,int h,
                 color bgColor,color textColor);
 void CreatePanelBackground(string name,int x,int y,int w,int h,
                            color bgColor,color borderColor);
+void CloseLastPosition(string symbol);
 //===================================================================
 
 
@@ -222,6 +238,88 @@ void OnChartEvent(const int id,const long &l,const double &d,const string &s)
       return;
    }
 
+   //=== キーボードショートカット処理 ================================
+   if(id == CHARTEVENT_KEYDOWN)
+   {
+      // チャートがアクティブかチェック
+      if(ChartGetInteger(0, CHART_IS_ACTIVE, 0) == 0)
+         return;
+
+      int vKey = (int)l;  // 仮想キーコード
+
+      // Ctrlキーが押されているかチェック
+      bool ctrlPressed = (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0;
+      // Altキーが押されているかチェック
+      bool altPressed = (GetAsyncKeyState(VK_MENU) & 0x8000) != 0;
+
+      // Ctrl + 1〜4 → BUY
+      if(ctrlPressed && !altPressed)
+      {
+         if(vKey == VK_1)
+         {
+            OpenPosition(true, 1);
+            return;
+         }
+         if(vKey == VK_2)
+         {
+            OpenPosition(true, 2);
+            return;
+         }
+         if(vKey == VK_3)
+         {
+            OpenPosition(true, 3);
+            return;
+         }
+         if(vKey == VK_4)
+         {
+            OpenPosition(true, 4);
+            return;
+         }
+         // Ctrl + C → 全決済
+         if(vKey == VK_C)
+         {
+            CloseAllPositionsOfSymbol(_Symbol);
+            UpdatePositionStats();
+            return;
+         }
+         // Ctrl + X → 直近エントリーのみ決済
+         if(vKey == VK_X)
+         {
+            CloseLastPosition(_Symbol);
+            UpdatePositionStats();
+            return;
+         }
+      }
+
+      // Alt + 1〜4 → SELL
+      if(altPressed && !ctrlPressed)
+      {
+         if(vKey == VK_1)
+         {
+            OpenPosition(false, 1);
+            return;
+         }
+         if(vKey == VK_2)
+         {
+            OpenPosition(false, 2);
+            return;
+         }
+         if(vKey == VK_3)
+         {
+            OpenPosition(false, 3);
+            return;
+         }
+         if(vKey == VK_4)
+         {
+            OpenPosition(false, 4);
+            return;
+         }
+      }
+
+      return;
+   }
+
+   //=== ボタンクリック処理 ==========================================
    if(id != CHARTEVENT_OBJECT_CLICK)
       return;
 
@@ -460,6 +558,52 @@ void OpenPosition(bool isBuy,int index)
       avgDirty = true;
       PlaySound(EntrySound);
    }
+}
+
+
+//+------------------------------------------------------------------+
+//| CloseLastPosition                                                |
+//+------------------------------------------------------------------+
+void CloseLastPosition(string symbol)
+{
+   int total = PositionsTotal();
+   if(total <= 0)
+   {
+      avgDirty = true;
+      return;
+   }
+
+   ulong lastTicket = 0;
+   datetime lastTime = 0;
+
+   // 直近のエントリー時刻を持つポジションを探す
+   for(int i = 0; i < total; i++)
+   {
+      ulong ticket = PositionGetTicket(i);
+      if(!PositionSelectByTicket(ticket)) continue;
+      if(PositionGetString(POSITION_SYMBOL) != symbol) continue;
+      if(PositionGetInteger(POSITION_MAGIC) != (long)MagicNumber) continue;
+
+      datetime openTime = (datetime)PositionGetInteger(POSITION_TIME);
+      if(openTime > lastTime)
+      {
+         lastTime = openTime;
+         lastTicket = ticket;
+      }
+   }
+
+   if(lastTicket == 0)
+   {
+      avgDirty = true;
+      return;
+   }
+
+   // 直近ポジションをクローズ
+   trade.SetExpertMagicNumber((int)MagicNumber);
+   if(trade.PositionClose(lastTicket))
+      PlaySound(ExitSound);
+
+   avgDirty = true;
 }
 
 
