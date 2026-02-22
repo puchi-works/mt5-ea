@@ -26,53 +26,53 @@ input double DefaultLots3 = 0.8;
 input double DefaultLots4 = 0.4;
 
 // CLOSE ALL ボタン
-string CloseBtnText   = "CLOSE ALL";
-color  CloseBtnColor  = clrBlack;
-int    CloseBtnWidth  = 240;
-int    CloseBtnHeight = 64;
+const string CloseBtnText   = "CLOSE ALL";
+const color  CloseBtnColor  = clrBlack;
+const int    CloseBtnWidth  = 240;
+const int    CloseBtnHeight = 64;
 
 // UIサイズ
-int rowHeight   = 80;
-int editWidth   = 100;
-int buttonWidth = 100;
-int buttonHeight = 64;
+const int rowHeight    = 80;
+const int editWidth    = 100;
+const int buttonWidth  = 100;
+const int buttonHeight = 64;
 
-int panelPaddingLeft   = 32;
-int panelPaddingRight  = 32;
-int panelPaddingTop    = 32;
-int panelPaddingBottom = 32;
+const int panelPaddingLeft   = 32;
+const int panelPaddingRight  = 32;
+const int panelPaddingTop    = 32;
+const int panelPaddingBottom = 32;
 
 // 上部情報ブロック
-int infoLineHeight     = 32;
-int infoLineGap        = 16;
-int infoBlockGapToRows = 32;
+const int infoLineHeight     = 32;
+const int infoLineGap        = 16;
+const int infoBlockGapToRows = 32;
 
 int rowsOffsetFromTop = 0;
 
-int marginEditToSell = 8;
-int marginSellToBuy  = 8;
+const int marginEditToSell = 8;
+const int marginSellToBuy  = 8;
 
-int gapRowsToClose = 16;
+const int gapRowsToClose = 16;
 
-string prefix       = "UCP_";
-const int ROW_COUNT = 4;
+const string prefix   = "UCP_";
+const int    ROW_COUNT = 4;
 
-color clrBorder  = (color)0xDDDDDD;
-color clrBgPanel = clrWhite;
-color clrText    = clrBlack;
+const color clrBorder  = (color)0xDDDDDD;
+const color clrBgPanel = clrWhite;
+const color clrText    = clrBlack;
 
-color clrSellBg  = clrDodgerBlue;
-color clrBuyBg   = clrRed;
-color clrBtnText = clrWhite;
+const color clrSellBg  = clrDodgerBlue;
+const color clrBuyBg   = clrRed;
+const color clrBtnText = clrWhite;
 
-// パネルサイズ＆位置
+// パネルサイズ＆位置（OnInitで計算）
 int panelWidth  = 0;
 int panelHeight = 0;
 int panelLeft   = 0;
 int panelTop    = 0;
 
 // ラベル列の幅
-int LabelColumnWidth = 120;
+const int LabelColumnWidth = 120;
 
 //=== AVG キャッシュ ================================================
 bool   avgDirty       = true;
@@ -387,7 +387,6 @@ void UpdatePositionStats()
    double totalCost  = 0.0;
    double totalProfit= 0.0;
    double netLotsDir = 0.0;
-   bool   hasPips    = false;
    double pips       = 0.0;
 
    int total = PositionsTotal();
@@ -437,11 +436,10 @@ void UpdatePositionStats()
 
          pips    = diff / _Point / g_pipFactor * sign;
          pipsText= ": " + DoubleToString(pips, 1);
-         hasPips = true;
       }
 
-      if(totalProfit < 0.0) plColor = clrRed;
-      if(hasPips && pips < 0.0) pipsColor = clrRed;
+      if(totalProfit < 0.0) plColor   = clrRed;
+      if(pips < 0.0)        pipsColor = clrRed;
    }
 
    ObjectSetString(0, prefix + "HDR_STATS_AVG",  OBJPROP_TEXT, avgText);
