@@ -76,6 +76,11 @@ bool   avgDirty       = true;
 //=== Pip係数（OnInitで初期化） =====================================
 double g_pipFactor = 1.0;
 
+//=== キーボードショートカット ======================================
+#define VK_CONTROL 0x11
+#define VK_SHIFT   0x10
+#define VK_C       0x43
+
 //===================================================================
 // Forward Declarations
 void UpdateLayout();
@@ -230,6 +235,19 @@ void OnChartEvent(const int id,const long &l,const double &d,const string &s)
    {
       UpdateLayout();
       ChartRedraw();
+      return;
+   }
+
+   // Ctrl+Shift+C: Close All（Wine/Mac では物理Ctrlキーが VK_CONTROL に対応）
+   if(id == CHARTEVENT_KEYDOWN)
+   {
+      bool ctrl  = (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0;
+      bool shift = (GetAsyncKeyState(VK_SHIFT)   & 0x8000) != 0;
+      if(ctrl && shift && (int)l == VK_C)
+      {
+         CloseAllPositionsOfSymbol(_Symbol);
+         UpdatePositionStats();
+      }
       return;
    }
 
